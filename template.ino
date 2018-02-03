@@ -1,6 +1,7 @@
 #include <CoDrone.h>
+//#define DEBUG
 
-#define DEBUG 0
+int gMorseCodeTimeUnitMs = 500;
 
 void JoystickControl()
 {
@@ -15,29 +16,82 @@ void JoystickControl()
   }
 }
 
-void MorseCodeLetter( char letter, int timeUnitMs ) {
-  if( letter == 'd' ) {
-    
-  } else if ( letter == 'a' ) {
-    
-  } else if ( letter == 'n' ) {
-    
-  } else if ( letter == 'i' ) {
-    
-  } else if ( letter == 'e' ) {
-    
-  } else if ( letter == 'l' ) {
-    
+void SetLedColor( String color ) {
+  if( color.equals("red") ) {
+    CoDrone.LedColor( ArmHold, Red, 255 );
+  } else if( color.equals("green") ) {
+    CoDrone.LedColor( ArmHold, Green, 255 );
+  } else if( color.equals("blue") ) {
+    CoDrone.LedColor( ArmHold, Blue, 255 );
+  } else if( color.equals("off") ) {
+    CoDrone.LedColor( ArmNone, Black, 0 );
   }
 }
 
-void MorseCodeWords( String message ) {
-  int timeUnitMs = 500;
+void MorseCodeDash( String color ) {
+  SetLedColor(color);
+  delay( 3*gMorseCodeTimeUnitMs );
+}
+
+void MorseCodeDot( String color ) {
+  SetLedColor(color);
+  delay( gMorseCodeTimeUnitMs );
+}
+
+void MorseCodeSpace() {
+  SetLedColor("off");
+  delay( gMorseCodeTimeUnitMs );
+}
+
+void MorseCodeSpaceLetters() {
+  SetLedColor("off");
+  delay( 3*gMorseCodeTimeUnitMs );
+}
+
+void MorseCodeLetter( String color, char letter ) {
+  if( letter == 'd' ) {
+    MorseCodeDash( color );
+    MorseCodeSpace();
+    MorseCodeDot( color );
+    MorseCodeSpace();
+    MorseCodeDot( color );
+  } else if ( letter == 'a' ) {
+    MorseCodeDot( color );
+    MorseCodeSpace();
+    MorseCodeDash( color );
+  } else if ( letter == 'n' ) {
+    MorseCodeDash( color );
+    MorseCodeSpace();
+    MorseCodeDot( color );
+  } else if ( letter == 'i' ) {
+    MorseCodeDot( color );
+    MorseCodeSpace();
+    MorseCodeDot( color );
+  } else if ( letter == 'e' ) {
+    MorseCodeDot( color );
+  } else if ( letter == 'l' ) {
+    MorseCodeDot( color );
+    MorseCodeSpace();
+    MorseCodeDash( color );
+    MorseCodeSpace();
+    MorseCodeDot( color );
+    MorseCodeSpace();
+    MorseCodeDot( color );
+  }
+
+  delay(100);
+  SetLedColor("off");
+}
+
+void MorseCodeWord( String message ) {
+  String color[] = {"red", "blue", "green"};
+
+  CoDrone.LedColor( EyeNone, Black, 0 );
 
   for( int letter=0; letter < message.length(); letter++ ) {
-//    Serial.println(message[letter]);
+    MorseCodeLetter( color[ letter % 3 ], message[letter] );
+    MorseCodeSpaceLetters();
   }
-  
 }
 
 void RightTurn( int delayMs = 1000 ) {
@@ -72,10 +126,9 @@ void Down( int delayMs = 1000 ) {
 
 void setup()
 {
-#IFDEF DEBUG
+#ifdef DEBUG
   Serial.begin(9600);
-  MorseCodeWords("daniel");
-#ELSE
+#else
   // Set the communication baud rate
   CoDrone.begin(115200);
 
@@ -84,9 +137,8 @@ void setup()
   CoDrone.AutoConnect(AddressInputDrone, droneAddress);
 
   // Enter additional setup code below!
-  MorseCodeWords("daniel");
 
-#ENDIF // DEBUG
+#endif // DEBUG
 }
 
 void loop()
@@ -99,17 +151,29 @@ void loop()
     byte bt8 = digitalRead(18);
 
     // Kill switch - IR 11 covered only
-    if (bt1 && !bt4 && !bt8)
-    {
+    if( bt1 && !bt4 && !bt8 ) {
       CoDrone.FlightEvent(Stop);
     }
 
-    if (!bt1 && !bt4 && !bt8) {
+    if( !bt1 && !bt4 && !bt8 ) {
       // If no IR sensors are covered allow the joystick to be used
       JoystickControl();
     } else {
       // Your code here
-        
+
+      if( !bt1 && bt4 && !bt8 ) {
+        MorseCodeWord("daniel");
+      }
+      if( !bt1 && !bt4 && bt8 ) {
+        CoDrone.LedColor( ArmHold, Red, 255 );
+        delay(2000);
+        CoDrone.LedColor( ArmHold, Green, 255 );
+        delay(2000);
+        CoDrone.LedColor( ArmHold, Blue, 255 );
+        delay(2000);
+        CoDrone.LedColor( ArmNone, Black, 0 );
+        delay(2000);
+      }
     }
   }
 }
